@@ -13,8 +13,6 @@ class BetwhereSpider(scrapy.Spider):
     start_urls = ['https://www.fctables.com//']
 
     def parse(self, response):
-        global match_file
-
         match_file.write("HOME TEAM      X       AWAY TEAM\n")
         for href in response.css("div.lm-container ul li a::attr(href)").extract():
             yield scrapy.FormRequest(url=response.url + href, callback=self.match_request)
@@ -22,14 +20,12 @@ class BetwhereSpider(scrapy.Spider):
 
     def match_request(self, response):
         all_matches = []
-        global match_file
 
         for match_id in response.css("div.livescore_body div.game::attr(id)").extract():
             all_matches.append(match_id)
 
         for match in all_matches:
             css_path = "#{} div.name meta::attr(content)".format(match)
-            print(css_path)
             content = response.css(css_path).extract_first()
 
             print(content)
