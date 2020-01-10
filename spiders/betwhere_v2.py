@@ -53,7 +53,6 @@ class BetwhereSpider(scrapy.Spider):
         global tomorrow_formatted
         global df
         global df_overall
-        global index
         global all_games
 
         self.logger.info('Extracting data from {}'.format(response.url))
