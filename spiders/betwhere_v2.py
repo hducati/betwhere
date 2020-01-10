@@ -20,9 +20,11 @@ last_index = 1
 overall_index = 1
 all_games = 1
 
-df = DataFrame(columns=('Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS'))
+df = DataFrame(columns=(
+    'Status', 'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS'))
+
 df_overall = DataFrame(columns=(
-    'Data jogo', 'Jogo', 'Times','Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 3.5', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
+    'Status', 'Data jogo', 'Jogo', 'Times','Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 3.5', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
     'Escanteios por jogo', 'Escanteios do time por jogo', 'Escanteios recebidos por jogo', 'Média cartão amarelo', 'Total cartão amarelo', 'Média cartão vermelho', 
     'Total cartão vermelho'))
 
@@ -140,7 +142,7 @@ class BetwhereSpider(scrapy.Spider):
             'Yellow cards avg': yellowcards_away_formatted[0], 'Yellow cards total': yellowcards_away_formatted[1], 
             'Red cards avg': redcards_away_formatted[0], 'Red cards total': redcards_away_formatted[1], 'Over 3.5': over_tres_cinco_away}
         
-        self.write_excel_file(request_date, home_team, away_team, last_stats, overall_stats, home_match_dict, away_match_dict)
+        self.write_excel_file(request_date, home_team, away_team, last_stats, overall_stats, home_match_dict, away_match_dict, status)
     
     def write_txt_file(self, home_team, away_team, cup_name, status, last_stats, overall_stats):
         
@@ -168,7 +170,7 @@ class BetwhereSpider(scrapy.Spider):
 
         match_file.write('\n')
 
-    def write_excel_file(self, match_date, home_team, away_team, last_stats, overall_stats, home_dict, away_dict):
+    def write_excel_file(self, match_date, home_team, away_team, last_stats, overall_stats, home_dict, away_dict, status):
         global last_index
         global overall_index
         global df
@@ -176,15 +178,15 @@ class BetwhereSpider(scrapy.Spider):
         global all_games
 
         stats_overview = [
-            'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
-            'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS'
+            'Status', 'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
+            'Status', 'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS'
         ]
 
         overall_stats_overview = [
-            'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 3.5', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
+            'Status', 'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 3.5', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
             'Escanteios por jogo', 'Escanteios do time por jogo', 'Escanteios recebidos por jogo', 'Média cartão amarelo', 'Total cartão amarelo', 
             'Média cartão vermelho', 'Total cartão vermelho',
-            'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 3.5', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
+            'Status', 'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 3.5', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
             'Escanteios por jogo', 'Escanteios do time por jogo', 'Escanteios recebidos por jogo', 'Média cartão amarelo', 'Total cartão amarelo', 
             'Média cartão vermelho', 'Total cartão vermelho'
         ]
@@ -199,6 +201,19 @@ class BetwhereSpider(scrapy.Spider):
 
         last_stats.insert(0, str(match_date))
         last_stats.insert(13, str(match_date))
+
+        last_stats.insert(0, status)
+        last_stats.insert(14, status)
+
+        for ls, ss in zip(last_stats, stats_overview):
+
+            if value_support == 14:
+                last_index += 1
+        
+            df.set_value(index=last_index, col=ss, value=ls)
+            value_support += 1
+
+        value_support = 0
 
         overall_stats.insert(0, home_team)
         overall_stats.insert(11, away_team)
@@ -233,18 +248,11 @@ class BetwhereSpider(scrapy.Spider):
         overall_stats.insert(20, home_dict['Red cards total'])
         overall_stats.insert(len(overall_stats), away_dict['Red cards total'])
 
-        for ls, ss in zip(last_stats, stats_overview):
-
-            if value_support == 13:
-                last_index += 1
-        
-            df.set_value(index=last_index, col=ss, value=ls)
-            value_support += 1
-
-        value_support = 0
+        overall_stats.insert(0, status)
+        overall_stats.insert(22, status)
       
         for overall, overview in zip(overall_stats, overall_stats_overview):
-            if value_support == 21:
+            if value_support == 22:
                 overall_index += 1
 
             df_overall.set_value(index=overall_index, col=overview, value=overall)
@@ -264,6 +272,14 @@ class BetwhereSpider(scrapy.Spider):
         writer = ExcelWriter(excel_path)
         
         self.logger.info('Started writing in excel file...')
+
+        df_overall.Status.replace([
+            'Finished', 'Not started', 'Postponed', '1st half', '2nd half', 'Half time'], [
+                'Encerrado', 'Não começou', 'Adiado', '1º tempo', '2º tempo', 'Intervalo'], inplace=True)
+
+        df.Status.replace([
+            'Finished', 'Not started', 'Postponed', '1st half', '2nd half', 'Half time'], [
+                'Encerrado', 'Não começou', 'Adiado', '1º tempo', '2º tempo', 'Intervalo'], inplace=True)
 
         df.to_excel(writer, "Últimos 6 jogos", index=True, header=True)
         df_overall.to_excel(writer, "Todos os jogos", index=True, header=True)
