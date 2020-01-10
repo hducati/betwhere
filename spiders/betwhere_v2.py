@@ -23,7 +23,8 @@ all_games = 1
 df = DataFrame(columns=('Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS'))
 df_overall = DataFrame(columns=(
     'Data jogo', 'Jogo', 'Times','Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 3.5', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
-    'Escanteios p/ jogo', 'Média cartão amarelo', 'Total cartão amarelo', 'Média cartão vermelho', 'Total cartão vermelho'))
+    'Escanteios por jogo', 'Escanteios do time por jogo', 'Escanteios recebidos por jogo', 'Média cartão amarelo', 'Total cartão amarelo', 'Média cartão vermelho', 
+    'Total cartão vermelho'))
 
 
 class BetwhereSpider(scrapy.Spider):
@@ -88,6 +89,20 @@ class BetwhereSpider(scrapy.Spider):
             corners_per_game_away = ''
             corners_per_game_home = ''
 
+        if response.css("#team_stats_vs > tbody > tr:nth-child(16) > td:nth-child(2)::text").extract_first() == 'Corners for per game':
+            corners_for_per_game_home = response.css("#team_stats_vs > tbody > tr:nth-child(16) > td:nth-child(1)::text").extract_first()
+            corners_for_per_game_away = response.css("#team_stats_vs > tbody > tr:nth-child(16) > td:nth-child(3)::text").extract_first()
+        else:
+            corners_for_per_game_home = ''
+            corners_for_per_game_away = ''
+
+        if response.css("#team_stats_vs > tbody > tr:nth-child(17) > td:nth-child(2)::text").extract_first() == 'Corners against per game':
+            corners_against_per_game_home = response.css("#team_stats_vs > tbody > tr:nth-child(17) > td:nth-child(1)::text").extract_first()
+            corners_against_per_game_away = response.css("#team_stats_vs > tbody > tr:nth-child(17) > td:nth-child(3)::text").extract_first()
+        else:
+            corners_against_per_game_home = ''
+            corners_against_per_game_away = ''
+
         if response.css("#team_stats_vs > tbody > tr:nth-child(32) > td:nth-child(2)::text").extract_first() == 'Yellow cards avg':
             yellowcards_home = response.css("#team_stats_vs > tbody > tr:nth-child(32) > td:nth-child(1)::text").extract_first()
             yellowcards_away = response.css("#team_stats_vs > tbody > tr:nth-child(32) > td:nth-child(3)::text").extract_first()
@@ -115,13 +130,15 @@ class BetwhereSpider(scrapy.Spider):
             over_tres_cinco_home = ''
             over_tres_cinco_away = ''
 
-        home_match_dict = {'Corners': corners_per_game_home, 'Yellow cards avg': yellowcards_home_formatted[0], 
-        'Yellow cards total': yellowcards_home_formatted[1],'Red cards avg': redcards_home_formatted[0], 
-        'Red cards total': redcards_home_formatted[1], 'Over 3.5': over_tres_cinco_home}
+        home_match_dict = {
+            'Corners': corners_per_game_home, 'Corners for per game': corners_for_per_game_home, 'Corners against': corners_against_per_game_home,
+            'Yellow cards avg': yellowcards_home_formatted[0], 'Yellow cards total': yellowcards_home_formatted[1],
+            'Red cards avg': redcards_home_formatted[0], 'Red cards total': redcards_home_formatted[1], 'Over 3.5': over_tres_cinco_home}
 
-        away_match_dict = {'Corners': corners_per_game_away, 'Yellow cards avg': yellowcards_away_formatted[0], 
-        'Yellow cards total': yellowcards_away_formatted[1], 'Red cards avg': redcards_away_formatted[0], 
-        'Red cards total': redcards_away_formatted[1], 'Over 3.5': over_tres_cinco_away}
+        away_match_dict = {
+            'Corners': corners_per_game_away, 'Corners for per game': corners_for_per_game_away, 'Corners against': corners_against_per_game_away,
+            'Yellow cards avg': yellowcards_away_formatted[0], 'Yellow cards total': yellowcards_away_formatted[1], 
+            'Red cards avg': redcards_away_formatted[0], 'Red cards total': redcards_away_formatted[1], 'Over 3.5': over_tres_cinco_away}
         
         self.write_excel_file(request_date, home_team, away_team, last_stats, overall_stats, home_match_dict, away_match_dict)
     
@@ -165,9 +182,11 @@ class BetwhereSpider(scrapy.Spider):
 
         overall_stats_overview = [
             'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 3.5', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
-            'Escanteios p/ jogo', 'Média cartão amarelo', 'Total cartão amarelo', 'Média cartão vermelho', 'Total cartão vermelho',
+            'Escanteios por jogo', 'Escanteios do time por jogo', 'Escanteios recebidos por jogo', 'Média cartão amarelo', 'Total cartão amarelo', 
+            'Média cartão vermelho', 'Total cartão vermelho',
             'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 3.5', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
-            'Escanteios p/ jogo', 'Média cartão amarelo', 'Total cartão amarelo', 'Média cartão vermelho', 'Total cartão vermelho'
+            'Escanteios por jogo', 'Escanteios do time por jogo', 'Escanteios recebidos por jogo', 'Média cartão amarelo', 'Total cartão amarelo', 
+            'Média cartão vermelho', 'Total cartão vermelho'
         ]
 
         value_support = 0
@@ -196,16 +215,22 @@ class BetwhereSpider(scrapy.Spider):
         overall_stats.insert(14, home_dict['Corners'])
         overall_stats.insert(len(overall_stats), away_dict['Corners'])
 
-        overall_stats.insert(15, home_dict['Yellow cards avg'])
+        overall_stats.insert(15, home_dict['Corners for per game'])
+        overall_stats.insert(len(overall_stats), away_dict['Corners for per game'])
+
+        overall_stats.insert(16, home_dict['Corners against'])
+        overall_stats.insert(len(overall_stats), away_dict['Corners against'])
+
+        overall_stats.insert(17, home_dict['Yellow cards avg'])
         overall_stats.insert(len(overall_stats), away_dict['Yellow cards avg'])
 
-        overall_stats.insert(16, home_dict['Yellow cards total'])
+        overall_stats.insert(18, home_dict['Yellow cards total'])
         overall_stats.insert(len(overall_stats), away_dict['Yellow cards total'])
 
-        overall_stats.insert(17, home_dict['Red cards avg'])
+        overall_stats.insert(19, home_dict['Red cards avg'])
         overall_stats.insert(len(overall_stats), away_dict['Red cards avg'])
 
-        overall_stats.insert(18, home_dict['Red cards total'])
+        overall_stats.insert(20, home_dict['Red cards total'])
         overall_stats.insert(len(overall_stats), away_dict['Red cards total'])
 
         for ls, ss in zip(last_stats, stats_overview):
@@ -219,7 +244,7 @@ class BetwhereSpider(scrapy.Spider):
         value_support = 0
       
         for overall, overview in zip(overall_stats, overall_stats_overview):
-            if value_support == 19:
+            if value_support == 21:
                 overall_index += 1
 
             df_overall.set_value(index=overall_index, col=overview, value=overall)
