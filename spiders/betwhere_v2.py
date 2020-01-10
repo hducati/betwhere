@@ -15,11 +15,12 @@ file_name = 'matches/txt/matchs_{}_{}.txt'.format(today_date, tomorrow_formatted
 match_file = open(join(getcwd(), file_name), 'w')
 
 URL_EXTRACT = ['https://www.fctables.com/todays-match-predictions/' + tomorrow_formatted]
-index = 1
+last_index = 1
+overall_index = 1
 all_games = 1
 
-df = DataFrame(columns=('Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS'))
-df_overall = DataFrame(columns=('Jogo', 'Times','Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS'))
+df = DataFrame(columns=('Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS'))
+df_overall = DataFrame(columns=('Data jogo', 'Jogo', 'Times','Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS'))
 
 
 class BetwhereSpider(scrapy.Spider):
@@ -55,11 +56,6 @@ class BetwhereSpider(scrapy.Spider):
         global index
         global all_games
 
-        stats_overview = [
-            'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
-            'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS'
-        ]
-
         self.logger.info('Extracting data from {}'.format(response.url))
 
         referrer = response.request.headers.get('Referer', None)
@@ -77,13 +73,23 @@ class BetwhereSpider(scrapy.Spider):
         away_team = response.css("div.gnbox.away a span::text").extract_first()
         cup_name = response.css("div.h2h_league_name a::text").extract_first()
         status = response.css("div.round-cd span::text").extract_first()
-
-        match_file.write(' | ' + cup_name + ' | '  + home_team + '   X   '  + away_team + '(' + status + ')' + '\n\n')
         
         last_stats = response.css("div.team_stats_forms ul li div::text").extract()
 
         overall_stats = response.css("div.team_stats_item ul li div::text").extract()
-     
+
+        self.write_txt_file(home_team, away_team, cup_name, status, last_stats, overall_stats)
+        self.write_excel_file(request_date, home_team, away_team, last_stats, overall_stats)
+
+    def write_txt_file(self, home_team, away_team, cup_name, status, last_stats, overall_stats):
+        
+        stats_overview = [
+            'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
+            'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS'
+        ]
+
+        match_file.write(' | ' + cup_name + ' | '  + home_team + '   X   '  + away_team + '(' + status + ')' + '\n\n')
+        
         match_file.write('        '+ home_team + '(Time de casa)\n')
 
         match_file.write('\n   Últimos 6 jogos     Todos os jogos\n\n')
@@ -101,39 +107,62 @@ class BetwhereSpider(scrapy.Spider):
 
         match_file.write('\n')
 
+    def write_excel_file(self, match_date, home_team, away_team, last_stats, overall_stats):
+        global last_index
+        global overall_index
+        global df
+        global df_overall
+        global all_games
+
+        stats_overview = [
+            'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
+            'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS'
+        ]
+
+        overall_stats_overview = [
+            'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
+            'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS'
+        ]
+
         value_support = 0
 
         last_stats.insert(0, home_team)
-        last_stats.insert(12, away_team)
+        last_stats.insert(11, away_team)
 
         last_stats.insert(0, 'Jogo ' + str(all_games))
         last_stats.insert(12, 'Jogo ' + str(all_games))
 
+        last_stats.insert(0, str(match_date))
+        last_stats.insert(13, '')
+
         overall_stats.insert(0, home_team)
-        overall_stats.insert(12, away_team)
+        overall_stats.insert(11, away_team)
 
         overall_stats.insert(0, 'Jogo ' + str(all_games))
         overall_stats.insert(12, 'Jogo ' + str(all_games))
 
-        stats_overview.insert(0, 'Times')
-        stats_overview.insert(12, 'Times')
-
-        stats_overview.insert(0, 'Jogo')
-        stats_overview.insert(12, 'Jogo')
-
-        print(last_stats)
-        print(stats_overview)
+        overall_stats.insert(0, str(match_date))
+        overall_stats.insert(13, '')
 
         for ls, ss in zip(last_stats, stats_overview):
 
-            if value_support == 12:
-                index += 1
-
-            df.set_value(index=index, col=ss, value=ls)
-            df_overall.set_value(index=index, col=ss, value=overall_stats[value_support])
+            if value_support == 13:
+                last_index += 1
+        
+            df.set_value(index=last_index, col=ss, value=ls)
             value_support += 1
 
-        index += 1
+        value_support = 0
+      
+        for overall, overview in zip(overall_stats, overall_stats_overview):
+            if value_support == 13:
+                overall_index += 1
+
+            df_overall.set_value(index=overall_index, col=overview, value=overall)
+            value_support += 1
+
+        last_index += 1
+        overall_index += 1
         all_games += 1
 
     def closed(self, reason):
@@ -144,8 +173,16 @@ class BetwhereSpider(scrapy.Spider):
         excel_path = join(getcwd(), path)
 
         writer = ExcelWriter(excel_path)
+        
+        self.logger.info('Started writing in excel file...')
+
+        # df.sort_values('Data jogo', ascending=True,  inplace=True)
+
+        # df_overall.sort_values('Data jogo', ascending=True, inplace=True)
 
         df.to_excel(writer, "Últimos 6 jogos", index=True, header=True)
         df_overall.to_excel(writer, "Todos os jogos", index=True, header=True)
 
         writer.save()
+
+        self.logger.info('Done!!')
