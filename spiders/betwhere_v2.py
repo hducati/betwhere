@@ -21,10 +21,10 @@ overall_index = 1
 all_games = 1
 
 df = DataFrame(columns=(
-    'Status', 'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS'))
+    'Liga', 'Status', 'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS'))
 
 df_overall = DataFrame(columns=(
-    'Status', 'Data jogo', 'Jogo', 'Times','Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 3.5', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
+    'Liga', 'Status', 'Data jogo', 'Jogo', 'Times','Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 3.5', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
     'Escanteios por jogo', 'Escanteios do time por jogo', 'Escanteios recebidos por jogo', 'Média cartão amarelo', 'Total cartão amarelo', 'Média cartão vermelho', 
     'Total cartão vermelho'))
 
@@ -78,6 +78,23 @@ class BetwhereSpider(scrapy.Spider):
         
         last_stats = response.css("div.team_stats_forms ul li div::text").extract()
         overall_stats = response.css("div.team_stats_item ul li div::text").extract()
+
+        print(len(last_stats))
+
+        if len(last_stats) == 0:
+            last_stats.clear()
+            for i in range(0, 21):
+                last_stats.insert(i, '')
+        else:
+            pass
+
+        if len(last_stats) == 15:
+            for i in range(1, 6):
+                last_stats.insert(i, '')
+
+        if len(overall_stats) == 15:
+            for i in range(1, 6):
+                overall_stats.insert(i, '')
 
         home_match_dict = {}
         away_match_dict = {}
@@ -142,10 +159,19 @@ class BetwhereSpider(scrapy.Spider):
             'Yellow cards avg': yellowcards_away_formatted[0], 'Yellow cards total': yellowcards_away_formatted[1], 
             'Red cards avg': redcards_away_formatted[0], 'Red cards total': redcards_away_formatted[1], 'Over 3.5': over_tres_cinco_away}
         
-        self.write_excel_file(request_date, home_team, away_team, last_stats, overall_stats, home_match_dict, away_match_dict, status)
+        self.write_excel_file(request_date, home_team, away_team, last_stats, overall_stats, home_match_dict, away_match_dict, status, cup_name)
     
     def write_txt_file(self, home_team, away_team, cup_name, status, last_stats, overall_stats):
-        
+
+        eng_status = ['Finished', 'Not started', 'Postponed', '1st half', '2nd half', 'Half time']
+        pt_status = ['Encerrado', 'Não começou', 'Adiado', '1º tempo', '2º tempo', 'Intervalo']
+
+        for i, j in zip(eng_status, pt_status):
+            if status == i:
+                status = status.replace(i, j)
+            else:
+                pass
+
         stats_overview = [
             'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
             'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS', 
@@ -170,7 +196,7 @@ class BetwhereSpider(scrapy.Spider):
 
         match_file.write('\n')
 
-    def write_excel_file(self, match_date, home_team, away_team, last_stats, overall_stats, home_dict, away_dict, status):
+    def write_excel_file(self, match_date, home_team, away_team, last_stats, overall_stats, home_dict, away_dict, status, cup):
         global last_index
         global overall_index
         global df
@@ -178,15 +204,15 @@ class BetwhereSpider(scrapy.Spider):
         global all_games
 
         stats_overview = [
-            'Status', 'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
-            'Status', 'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS'
+            'Liga', 'Status', 'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
+            'Liga','Status', 'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS'
         ]
 
         overall_stats_overview = [
-            'Status', 'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 3.5', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
+            'Liga', 'Status', 'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 3.5', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
             'Escanteios por jogo', 'Escanteios do time por jogo', 'Escanteios recebidos por jogo', 'Média cartão amarelo', 'Total cartão amarelo', 
             'Média cartão vermelho', 'Total cartão vermelho',
-            'Status', 'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 3.5', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
+            'Liga', 'Status', 'Data jogo', 'Jogo', 'Times', 'Partidas', 'Gols', 'Por jogo', 'Vitórias', 'Empates', 'Derrotas', 'Over 3.5', 'Over 2.5', 'Over 1.5', 'CS', 'BTTS',
             'Escanteios por jogo', 'Escanteios do time por jogo', 'Escanteios recebidos por jogo', 'Média cartão amarelo', 'Total cartão amarelo', 
             'Média cartão vermelho', 'Total cartão vermelho'
         ]
@@ -205,9 +231,12 @@ class BetwhereSpider(scrapy.Spider):
         last_stats.insert(0, status)
         last_stats.insert(14, status)
 
+        last_stats.insert(0, cup)
+        last_stats.insert(15, cup)
+
         for ls, ss in zip(last_stats, stats_overview):
 
-            if value_support == 14:
+            if value_support == 15:
                 last_index += 1
         
             df.set_value(index=last_index, col=ss, value=ls)
@@ -250,9 +279,12 @@ class BetwhereSpider(scrapy.Spider):
 
         overall_stats.insert(0, status)
         overall_stats.insert(22, status)
+
+        overall_stats.insert(0, cup)
+        overall_stats.insert(23, cup)
       
         for overall, overview in zip(overall_stats, overall_stats_overview):
-            if value_support == 22:
+            if value_support == 23:
                 overall_index += 1
 
             df_overall.set_value(index=overall_index, col=overview, value=overall)
