@@ -6,8 +6,9 @@ from os.path import join
 
 
 all_matches_stats = []
-all_first_corners = []
-corner_team_formatted = []
+main_home = []
+main_first_corners = []
+main_away = []
 
 
 class ScoreBSpider(scrapy.Spider):
@@ -17,7 +18,7 @@ class ScoreBSpider(scrapy.Spider):
         start_urls = ['https://www.scorebing.com']
 
         for url in start_urls:
-            yield scrapy.Request(url=url, callback=self.parse, meta={'proxy': 'https://72.169.67.101:87'})
+            yield scrapy.Request(url=url, callback=self.parse)
     
     def parse(self, response):
         print(response.url)
@@ -27,7 +28,7 @@ class ScoreBSpider(scrapy.Spider):
         for url in league_url:
             url = response.url + url
             self.logger.info('Preparing to extract data from {}...'.format(url))
-            yield scrapy.Request(url=url, callback=self.game_league_extract, meta={'proxy': 'https://72.169.67.101:87'})
+            yield scrapy.Request(url=url, callback=self.game_league_extract)
 
     def game_league_extract(self, response):
         global all_matches_stats
@@ -73,35 +74,42 @@ class ScoreBSpider(scrapy.Spider):
 
             for url in itertools.chain(game_home_url, game_away_url):
                 url = 'https://scorebing.com' + url
-                yield scrapy.Request(url=url, callback=self.team_extract, meta={'proxy': 'https://72.169.67.101:87'})
+                yield scrapy.Request(url=url, callback=self.team_extract)
         else:
             raise scrapy.exceptions.CloseSpider('Connection to {} failed'.format(response.url))
 
     def team_extract(self, response):
-        global all_first_corners
-        global corner_team_formatted
+        global main_first_corners
+        global main_home
+        global main_away
+
+        corner_home_formatted = []
 
         if response.status == 200:
             corner_home_team = response.css('#ended > table > tbody > tr > td.text-right.BR0 > a::text').extract()
             corner_away_team = response.css('#ended > table > tbody > tr > td.text-left > a::text').extract()
+            all_first_corners = response.css('#race_timeLine > span:nth-child(22)::attr(title)').extract()  
 
-            for c_home, c_away in zip(corner_home_team, corner_away_team):
+            for c_home in corner_home_team:
                 c_home_format = c_home.strip()
-                corner_team_formatted.append(c_home_format + ' X ' + c_away)
-
-            for i in response.css('#race_timeLine > span:nth-child(22)::attr(title)').extract():   
-                all_first_corners.append(i)
+                corner_home_formatted.append(c_home_format)
             
-            corner_team_formatted.append('\n')
-            all_first_corners.append('\n')
+            main_first_corners.append(all_first_corners)
+            main_home.append(corner_home_formatted)
+            main_away.append(corner_away_team)
+
+            main_home.append('\n')
+            main_first_corners.append('\n')
+            main_away.append('\n')
 
         else:
             raise scrapy.exceptions.CloseSpider('Connection to {} failed'.format(response.url))
 
     def closed(self, reason):
         global all_matches_stats
-        global all_first_corners
-        global corner_team_formatted
+        global main_first_corners
+        global main_home
+        global main_away
 
         df_games = pd.DataFrame()
     
@@ -119,9 +127,24 @@ class ScoreBSpider(scrapy.Spider):
                     df_games.set_value(index=index, col=key, value=x)
                     index += 1
         
-        df_first_corners = pd.DataFrame({
-            'Teams': corner_team_formatted,
-            'Corners': all_first_corners})
+        print('First: {}'.format(str(len(main_first_corners))))
+        print('Home: {}'.format(str(len(main_home))))
+        print('Away: {}'.format(str(len(main_away))))
+
+        """df_first_corners = pd.DataFrame({
+            'Team home': main_home,
+            'Corners': main_first_corners,
+            'Team away': main_away})
+        """
+
+        df_first_corners = pd.DataFrame(columns=(
+            'Team home', 'Corner', 'Team away'))
+
+        index = 1
+        for home, corner, away in zip(main_home, main_first_corners, main_away):
+            for x, i, j in zip(home, corner, away):
+                df_first_corners.set_value(index=index, col=('Team home', 'Corner', 'Team away'), value=(x, i, j))
+                index += 1
 
         fullpath = join(getcwd(), 'matches/csv/upcoming_matches.xlsx')
 
