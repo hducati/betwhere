@@ -47,6 +47,7 @@ class ScoreBSpider(scrapy.Spider):
         if response.status == 200:
             position = response.css('tbody > tr > td:nth-child(1)::text').extract()
             teams = response.css('tbody > tr > td:nth-child(2) > a::text').extract()
+            ft = response.css('tbody > tr > td:nth-child(3) > strong::text').extract()
             stats = response.css('tbody > tr > td:nth-child(n+3):nth-child(-n+18)::text').extract()
             
             n = 1
@@ -61,12 +62,30 @@ class ScoreBSpider(scrapy.Spider):
                     stats_temp = []
                     n = 1
 
-            df = pd.DataFrame(columns=(
+            df = pd.DataFrame({
+                'Position': position,
+                'Team': teams,
+                'FT': ft
+            })
+
+            df_stats = pd.DataFrame(stats_format, columns=(
+                'HT', '37-45', '80-90',
+                'Team FT', 'Team HT', 'Team 37-45', 'Team 80-90', 'Team R3', 'Team R5', 'Team R7', 'Team R9',
+                'Opponent FT', 'Opponent HT', 'Opponent 37-45', 'Opponent 80-90'
+            ))
+
+            print(df_stats)
+
+            frames = [df, df_stats]
+
+            result = pd.concat(frames, axis=1)
+
+            '''df = pd.DataFrame(columns=(
                 'Position', 'Team', 'FT', 'HT', '37-45', '80-90',
                 'Team FT', 'Team HT', 'Team 37-45', 'Team 80-90', 'Team R3', 'Team R5', 'Team R7', 'Team R9',
-                'Opponent FT', 'Opponent HT', 'Opponent 37-45', 'Opponent 80-90'))
+                'Opponent FT', 'Opponent HT', 'Opponent 37-45', 'Opponent 80-90'))'''
 
-            df.to_excel(writer, value, index=True, header=True)
+            result.to_excel(writer, str(value), index=True, header=True)
             value += 1
 
         else:
