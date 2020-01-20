@@ -315,6 +315,8 @@ class BetwhereSpider(scrapy.Spider):
 
         df.to_excel(writer, "Últimos 6 jogos", index=True, header=True)
         df_overall.to_excel(writer, "Todos os jogos", index=True, header=True)
+
+        df_bet.sort_values(by=['Escanteios por jogo'], inplace=True)
         df_bet.to_excel(writer, 'Cantos - jogos apostáveis', index=True, header=True)
 
         writer.save()
