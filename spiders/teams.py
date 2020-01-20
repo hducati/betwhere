@@ -5,7 +5,7 @@ from os import getcwd
 from os.path import join
 
 
-fullpath = join(getcwd(), 'matches/csv/analyze_corner.xlsx')
+fullpath = join(getcwd(), 'matches/csv/table_corners.xlsx')
 
 writer = pd.ExcelWriter(fullpath)
 
