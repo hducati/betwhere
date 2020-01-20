@@ -8,7 +8,7 @@ from os.path import join
 fullpath = join(getcwd(), 'matches/csv/analyze_corner.xlsx')
 
 writer = pd.ExcelWriter(fullpath)
-value = 1
+
 
 class ScoreBSpider(scrapy.Spider):
     name = 'ft_teams'
@@ -41,6 +41,9 @@ class ScoreBSpider(scrapy.Spider):
         global value
         global writer
 
+        referrer = response.request.headers.get('Referer', None)
+        referrer_decoded = referrer.decode().split('/')
+
         stats = []
         stats_format = []
      
@@ -65,28 +68,23 @@ class ScoreBSpider(scrapy.Spider):
             df = pd.DataFrame({
                 'Position': position,
                 'Team': teams,
-                'FT': ft
-            })
+                'FT': ft})
 
             df_stats = pd.DataFrame(stats_format, columns=(
                 'HT', '37-45', '80-90',
                 'Team FT', 'Team HT', 'Team 37-45', 'Team 80-90', 'Team R3', 'Team R5', 'Team R7', 'Team R9',
-                'Opponent FT', 'Opponent HT', 'Opponent 37-45', 'Opponent 80-90'
-            ))
-
-            print(df_stats)
+                'Opponent FT', 'Opponent HT', 'Opponent 37-45', 'Opponent 80-90'))
 
             frames = [df, df_stats]
 
             result = pd.concat(frames, axis=1)
 
-            '''df = pd.DataFrame(columns=(
-                'Position', 'Team', 'FT', 'HT', '37-45', '80-90',
-                'Team FT', 'Team HT', 'Team 37-45', 'Team 80-90', 'Team R3', 'Team R5', 'Team R7', 'Team R9',
-                'Opponent FT', 'Opponent HT', 'Opponent 37-45', 'Opponent 80-90'))'''
+            sheetname = referrer_decoded[-2].title() + ' ' + referrer_decoded[-1].title()
 
-            result.to_excel(writer, str(value), index=True, header=True)
-            value += 1
+            if result.empty:
+                pass
+            else:
+                result.to_excel(writer, sheetname, index=True, header=True)
 
         else:
             scrapy.exceptions.CloseSpider('Connection to {} failed. Closing spider...'.format(response.url))
