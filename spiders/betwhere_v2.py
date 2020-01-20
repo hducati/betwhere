@@ -4,7 +4,7 @@ from os import getcwd
 from os.path import join
 from time import gmtime, strftime
 from datetime import datetime, timedelta
-from pandas import DataFrame, ExcelWriter
+from pandas import DataFrame, ExcelWriter, to_numeric
 
 today_date = datetime.today().strftime('%d-%m-%Y')
 tomorrow = datetime.now() + timedelta(days=1)
@@ -78,8 +78,6 @@ class BetwhereSpider(scrapy.Spider):
         
         last_stats = response.css("div.team_stats_forms ul li div::text").extract()
         overall_stats = response.css("div.team_stats_item ul li div::text").extract()
-
-        print(len(last_stats))
 
         if len(last_stats) == 0:
             last_stats.clear()
@@ -313,8 +311,11 @@ class BetwhereSpider(scrapy.Spider):
             'Finished', 'Not started', 'Postponed', '1st half', '2nd half', 'Half time'], [
                 'Encerrado', 'Não começou', 'Adiado', '1º tempo', '2º tempo', 'Intervalo'], inplace=True)
 
+        df_bet = df_overall.loc[(df_overall['Data jogo'] == today_date) & (to_numeric(df_overall['Escanteios por jogo']) >= 9.0 )]
+
         df.to_excel(writer, "Últimos 6 jogos", index=True, header=True)
         df_overall.to_excel(writer, "Todos os jogos", index=True, header=True)
+        df_bet.to_excel(writer, 'Cantos - jogos apostáveis', index=True, header=True)
 
         writer.save()
 
