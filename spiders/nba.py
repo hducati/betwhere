@@ -4,8 +4,7 @@ from os.path import join
 from time import gmtime, strftime
 from datetime import datetime, timedelta
 from pandas import DataFrame, ExcelWriter, to_numeric, concat, read_excel
-from openpyxl.utils.dataframe import dataframe_to_rows
-from openpyxl import Workbook
+import itertools
 
 df_global = DataFrame()
 
@@ -26,8 +25,9 @@ class ScoreBSpider(scrapy.Spider):
     def parse(self, response):
         if response.status == 200:
             games_url = response.css('#sched-container > div:nth-child(3) > table > tbody > tr > td:nth-child(1) > a::attr(href)').extract()
+            at_games_url = response.css('#sched-container > div:nth-child(3) > table > tbody > tr > td.home > div > a::attr(href)').extract()
 
-            for game in games_url:
+            for game in itertools.chain(games_url, at_games_url):
                 team = game.split('/')[-1][0:3]
 
                 url = 'https://www.espn.com/nba/team/stats/_/name/' + team
@@ -100,6 +100,10 @@ class ScoreBSpider(scrapy.Spider):
         global df_global
 
         self.logger.info('Saving excel file...')
+
+        df_global['PTS'] = to_numeric(df_global['PTS'], errors='coerce')
+        df_global.sort_values(by=['PTS'], inplace=True, ascending=False)
         df_global.to_excel(writer, index=True, header=True)
         writer.save()
+
         self.logger.info('Done!!')
