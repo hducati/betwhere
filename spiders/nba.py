@@ -8,7 +8,8 @@ import itertools
 
 df_global = DataFrame()
 
-fullpath = join(getcwd(), 'matches/csv/nba_matches.xlsx')
+today_date = datetime.today().strftime('%d-%m-%Y')
+fullpath = join(getcwd(), 'matches/csv/nba_matches_{}.xlsx'.format(today_date))
 
 writer = ExcelWriter(fullpath)
 
@@ -28,7 +29,7 @@ class ScoreBSpider(scrapy.Spider):
             at_games_url = response.css('#sched-container > div:nth-child(3) > table > tbody > tr > td.home > div > a::attr(href)').extract()
 
             for game in itertools.chain(games_url, at_games_url):
-                team = game.split('/')[-1][0:3]
+                team = game.split('/')[-2]
 
                 url = 'https://www.espn.com/nba/team/stats/_/name/' + team
 
@@ -41,7 +42,12 @@ class ScoreBSpider(scrapy.Spider):
             player_extract = response.css('#fittPageContainer > div.StickyContainer > div.page-container.cf > div.layout.is-9-3 > div > section > div > section:nth-child(5) > div.flex > table > tbody > tr > td > span > a::attr(href)').extract()
 
             for player in player_extract:
-                yield scrapy.Request(url=player, callback=self.player_stats)
+                name = player.split('/')[-1]
+                player_id = player.split('/')[-2]
+
+                url = 'https://www.espn.com/nba/player/gamelog/_/id/{}/{}'.format(player_id, name)
+
+                yield scrapy.Request(url=url, callback=self.player_stats)
         else:
             scrapy.exceptions.CloseSpider('Connection failed. Closing spider...')
 
@@ -54,12 +60,12 @@ class ScoreBSpider(scrapy.Spider):
         name_player = []
 
         if response.status == 200:
-            last_team = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div.PageLayout__Main > section.Card.gamelogWidget.gamelogWidget--basketball > div > section > div > div > div.Table__Scroller > table > tbody > tr > td:nth-child(2) > span > span:nth-child(3) > a::text').extract()
-            status = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div.PageLayout__Main > section.Card.gamelogWidget.gamelogWidget--basketball > div > section > div > div > div.Table__Scroller > table > tbody > tr > td.flex.tl.Table__TD > a > span > span.pr2 > div::text').extract()
+            last_team = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div > section > div > div > div.Table__Scroller > table > tbody > tr > td:nth-child(2) > span > span > a::text').extract()
+            status = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div > section > div > div > div.Table__Scroller > table > tbody > tr > td:nth-child(3) > a > span > span.pr2 > div::text').extract()
             team = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(1) > div > div > div.PlayerHeader__Left.flex.items-center.justify-start.overflow-hidden.brdr-clr-gray-09 > div.PlayerHeader__Main.flex.items-center > div.PlayerHeader__Main_Aside.min-w-0.flex-grow.flex-basis-0 > div > ul > li.truncate.min-w-0 > a::text').extract_first()
-            stats = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div.PageLayout__Main > section.Card.gamelogWidget.gamelogWidget--basketball > div > section > div > div > div.Table__Scroller > table > tbody > tr > td:nth-child(n+4):nth-child(-n+14)::text').extract()
+            stats = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div > section > div > div > div.Table__Scroller > table > tbody > tr > td:nth-child(n+4):nth-child(-n+17)::text').extract()
             player = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(1) > div > div > div.PlayerHeader__Left.flex.items-center.justify-start.overflow-hidden.brdr-clr-gray-09 > div.PlayerHeader__Main.flex.items-center > div.PlayerHeader__Main_Aside.min-w-0.flex-grow.flex-basis-0 > h1 > span.truncate.min-w-0.fw-light::text').extract_first()
-            
+
             for i in range(0, len(last_team)):
                 team_list.append(team)
                 name_player.append(player)
@@ -76,13 +82,13 @@ class ScoreBSpider(scrapy.Spider):
                 player_list.append(s)
                 cont += 1
 
-                if cont == 11:
+                if cont == 14:
                     player_main_list.append(player_list)
                     player_list = []
                     cont = 0          
 
             df_stats = DataFrame(player_main_list, columns=(
-                'MIN', 'FG%', '3P%', 'FT%', 'REB', 'AST', 'BLK', 'STL', 'PF', 'TO', 'PTS'))
+                'MIN', 'FG', 'FG%', '3P', '3P%', 'FT', 'FT%', 'REB', 'AST', 'BLK', 'STL', 'PF', 'TO', 'PTS'))
 
             frames = [df, df_stats]
 
@@ -103,7 +109,7 @@ class ScoreBSpider(scrapy.Spider):
 
         df_global['PTS'] = to_numeric(df_global['PTS'], errors='coerce')
         df_global.sort_values(by=['PTS'], inplace=True, ascending=False)
-        df_global.to_excel(writer, index=True, header=True)
+        df_global.to_excel(writer, 'NBA - Player stats', index=True, header=True)
         writer.save()
 
         self.logger.info('Done!!')
