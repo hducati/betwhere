@@ -61,20 +61,12 @@ class ScoreBSpider(scrapy.Spider):
         date_format = []
 
         if response.status == 200:
-            date = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div > section > div > div > div.Table__Scroller > table > tbody > tr > td:nth-child(1)::text').extract()
-            last_team = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div > section > div > div > div.Table__Scroller > table > tbody > tr > td:nth-child(2) > span > span > a::text').extract()
-            status = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div > section > div > div > div.Table__Scroller > table > tbody > tr > td:nth-child(3) > a > span > span.pr2 > div::text').extract()
+            date = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(n+2):nth-child(-n+3) > div > section > div > div > div.Table__Scroller > table > tbody > tr > td:nth-child(1)::text').extract()
+            last_team = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(n+2):nth-child(-n+3) > div > section > div > div > div.Table__Scroller > table > tbody > tr > td:nth-child(2) > span > span > a::text').extract()
+            status = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(n+2):nth-child(-n+3) > div > section > div > div > div.Table__Scroller > table > tbody > tr > td:nth-child(3) > a > span > span.pr2 > div::text').extract()
             team = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(1) > div > div > div.PlayerHeader__Left.flex.items-center.justify-start.overflow-hidden.brdr-clr-gray-09 > div.PlayerHeader__Main.flex.items-center > div.PlayerHeader__Main_Aside.min-w-0.flex-grow.flex-basis-0 > div > ul > li.truncate.min-w-0 > a::text').extract_first()
-            stats = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div > section > div > div > div.Table__Scroller > table > tbody > tr > td:nth-child(n+4):nth-child(-n+17)::text').extract()
+            stats = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(n+2):nth-child(-n+3) > div > section > div > div > div.Table__Scroller > table > tbody > tr > td:nth-child(n+4):nth-child(-n+17)::text').extract()
             player = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(1) > div > div > div.PlayerHeader__Left.flex.items-center.justify-start.overflow-hidden.brdr-clr-gray-09 > div.PlayerHeader__Main.flex.items-center > div.PlayerHeader__Main_Aside.min-w-0.flex-grow.flex-basis-0 > h1 > span.truncate.min-w-0.fw-light::text').extract_first()
-            
-            if len(stats) < 112:
-                stats = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(3) > div > section > div > div > div.Table__Scroller > table > tbody > tr > td:nth-child(n+4):nth-child(-n+17)::text').extract()
-                last_team = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(3) > div > section > div > div > div.Table__Scroller > table > tbody > tr > td:nth-child(2) > span > span:nth-child(3) > a::text').extract()
-                status = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(3) > div > section > div > div > div.Table__Scroller > table > tbody > tr > td:nth-child(3) > a > span > span.pr2 > div::text').extract()
-                date = response.css('#fittPageContainer > div.StickyContainer > div:nth-child(5) > div > div > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(3) > div > section > div > div > div.Table__Scroller > table > tbody > tr > td:nth-child(1)::text').extract()
-            else:
-                pass
 
             for i in range(0, len(last_team)):
                 team_list.append(team)
